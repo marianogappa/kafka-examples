@@ -5,7 +5,7 @@ import kafka.consumer.Whitelist
 import kafka.producer.KeyedMessage
 import kafka.serializer.StringDecoder
 import org.scalatest.{ FunSpec, ShouldMatchers }
-import utils.{KafkaAdminUtils, KafkaConsumerUtils, KafkaProducerUtils}
+import utils.{AwaitCondition, KafkaAdminUtils, KafkaConsumerUtils, KafkaProducerUtils}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{Await, Future}
@@ -30,7 +30,7 @@ class ConsumerGroupTest extends FunSpec with ShouldMatchers with AwaitCondition 
         }
       }.andThen { case _ ⇒ println(s"Finished producing messages") }
 
-      var pickedUpTickets = 0
+      var consumedMessages = 0
 
       val consumerFutures = (1 to 3) map { consumerNumber ⇒
         val consumer = KafkaConsumerUtils.create(consumerTimeoutMs = 5000, autoOffsetReset = "smallest", groupId = consumerGroupId)
@@ -42,17 +42,18 @@ class ConsumerGroupTest extends FunSpec with ShouldMatchers with AwaitCondition 
             println(s"Consumer Number $consumerNumber consumed ${item.message()}")
             Thread.sleep(100)
 
-            pickedUpTickets += 1
+            consumedMessages += 1
           }
         }.andThen { case _ ⇒ println(s"Shutting down Consumer Number $consumerNumber"); consumer.shutdown() }
       }
 
       awaitCondition("Didn't consume 25 messages!", 10.seconds) {
-        pickedUpTickets shouldBe 25
+        consumedMessages shouldBe 25
       }
 
-      KafkaAdminUtils.deleteTopic(topic)
+      producer.close()
       (consumerFutures :+ producerFuture) foreach (Await.ready(_, 10.second))
+      KafkaAdminUtils.deleteTopic(topic)
     }
   }
 }

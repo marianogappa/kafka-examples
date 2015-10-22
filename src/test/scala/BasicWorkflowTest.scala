@@ -3,7 +3,7 @@ import java.util.UUID
 import kafka.consumer.Whitelist
 import kafka.producer.KeyedMessage
 import org.scalatest.{ ShouldMatchers, FunSpec }
-import utils.{KafkaAdminUtils, KafkaProducerUtils, KafkaConsumerUtils}
+import utils.{AwaitCondition, KafkaAdminUtils, KafkaProducerUtils, KafkaConsumerUtils}
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -29,22 +29,23 @@ class BasicWorkflowTest extends FunSpec with ShouldMatchers with AwaitCondition 
         }
       }.andThen { case _ ⇒ println(s"Finished producing messages") }
 
-      var pickedUpTickets = 0
+      var consumedMessages = 0
 
       val consumerFuture = Future {
         println("Consuming")
         stream foreach { item ⇒
           println(s"Consumed ${item.message()}")
-          pickedUpTickets += 1
+          consumedMessages += 1
         }
       }.andThen { case _ ⇒ println(s"Shutting down Consumer"); consumer.shutdown() }
 
       awaitCondition("Didn't consume 10 messages!", 10.seconds) {
-        pickedUpTickets shouldBe 10
+        consumedMessages shouldBe 10
       }
 
-      KafkaAdminUtils.deleteTopic(topic)
+      producer.close()
       List(producerFuture, consumerFuture) foreach (Await.ready(_, 10.second))
+      KafkaAdminUtils.deleteTopic(topic)
     }
   }
 }
