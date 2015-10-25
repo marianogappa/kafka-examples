@@ -26,7 +26,6 @@ class ProducerConsumerAndLoggerTest extends FunSpec with ShouldMatchers with Awa
 
       val producerFuture = Future {
         (1 to 10) foreach { number ⇒
-          Thread.sleep(50)
           producer.send(new KeyedMessage[Array[Byte], Array[Byte]](topic, s"Message $number".getBytes("UTF-8")))
         }
       }.andThen { case _ ⇒ println(s"Finished producing messages") }
@@ -36,7 +35,6 @@ class ProducerConsumerAndLoggerTest extends FunSpec with ShouldMatchers with Awa
       val consumerFuture = Future {
         stream foreach { item ⇒
           consumedMessages += 1
-          Thread.sleep(10)
           producer.send(new KeyedMessage[Array[Byte], Array[Byte]](consumerTopic, s"Message ${item.message()}".getBytes("UTF-8")))
         }
       }.andThen { case _ ⇒ println(s"Shutting down Consumer"); consumer.shutdown() }

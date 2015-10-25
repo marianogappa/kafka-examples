@@ -24,7 +24,6 @@ class BasicWorkflowTest extends FunSpec with ShouldMatchers with AwaitCondition 
       val producerFuture = Future {
         (1 to 10) foreach { number ⇒
           println(s"Producing Message $number")
-          Thread.sleep(10)
           producer.send(new KeyedMessage[Array[Byte], Array[Byte]](topic, s"Message $number".getBytes("UTF-8")))
         }
       }.andThen { case _ ⇒ println(s"Finished producing messages") }

@@ -25,7 +25,6 @@ class ConsumerGroupTest extends FunSpec with ShouldMatchers with AwaitCondition 
       val producerFuture = Future {
         (1 to 25) foreach { number ⇒
           println(s"Producing Message $number")
-          Thread.sleep(100)
           producer.send(new KeyedMessage[Array[Byte], Array[Byte]](topic, number.toString.getBytes("UTF-8"), s"Message $number".getBytes("UTF-8")))
         }
       }.andThen { case _ ⇒ println(s"Finished producing messages") }
@@ -40,7 +39,6 @@ class ConsumerGroupTest extends FunSpec with ShouldMatchers with AwaitCondition 
           println(s"Consumer Number $consumerNumber begins consuming")
           stream foreach { item ⇒
             println(s"Consumer Number $consumerNumber consumed ${item.message()}")
-            Thread.sleep(100)
 
             consumedMessages += 1
           }

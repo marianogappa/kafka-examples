@@ -8,13 +8,7 @@ import kafka.serializer.StringDecoder
 
 object KafkaConsumerUtils {
 
-  lazy val config = ConfigFactory.load()
-
-  lazy val zkHost = config.getString("zookeeper.host")
-  lazy val zkPort = config.getString("zookeeper.port")
-
-
-  def properties(groupId: String,
+  private def properties(groupId: String,
                  maybeConsumerId: Option[String],
                  socketTimeoutMs: Int,
                  socketReceiveBufferBytes: Int,
@@ -45,7 +39,7 @@ object KafkaConsumerUtils {
 
     val props = new Properties()
 
-    props.put("zookeeper.connect", s"$zkHost:$zkPort")
+    props.put("zookeeper.connect", zookeperConnect)
 
 
     maybeConsumerId foreach (consumerId => props.put("consumer.consumerId", consumerId.toString))

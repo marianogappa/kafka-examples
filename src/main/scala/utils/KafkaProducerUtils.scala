@@ -8,12 +8,7 @@ import kafka.producer._
 
 object KafkaProducerUtils {
 
-  lazy val config = ConfigFactory.load()
-
-  lazy val brokerHost = config.getString("kafka-broker.host")
-  lazy val brokerPort = config.getString("kafka-broker.port")
-
-  def properties(requestRequiredAcks: Int,
+  private def properties(requestRequiredAcks: Int,
                          requestTimeoutMs: Int,
                          producerType: String,
                          serializerClass: String,
@@ -34,7 +29,7 @@ object KafkaProducerUtils {
 
     val props = new Properties()
 
-    props.put("metadata.broker.list", s"$brokerHost:$brokerPort")
+    props.put("metadata.broker.list", metadataBrokerList)
 
     props.put("request.required.acks", requestRequiredAcks.toString)
     props.put("request.timeout.ms", requestTimeoutMs.toString)
