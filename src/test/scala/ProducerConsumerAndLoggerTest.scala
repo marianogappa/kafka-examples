@@ -14,31 +14,38 @@ class ProducerConsumerAndLoggerTest extends FunSpec with ShouldMatchers with Awa
   describe("A consumer group") {
     it("should produce and consume messages, and a logger should sniff and print it out") {
 
+      val MessageCount = 25
+
       val topic = s"topic-${UUID.randomUUID()}"
       val consumerTopic = s"consumerTopic-${UUID.randomUUID()}"
 
       List(topic, consumerTopic) foreach (KafkaAdminUtils.createTopic(_))
 
+
       val producer = KafkaProducerUtils.create()
-      val consumer = KafkaConsumerUtils.create(consumerTimeoutMs = 5000, autoOffsetReset = "smallest")
-
-      val stream = consumer.createMessageStreamsByFilter(new Whitelist(topic), 1, new StringDecoder, new StringDecoder).head
-
       val producerFuture = Future {
-        (1 to 10) foreach { number ⇒
+        (1 to MessageCount) foreach { number ⇒
           producer.send(new KeyedMessage[Array[Byte], Array[Byte]](topic, s"Message $number".getBytes("UTF-8")))
+          Thread.sleep(50) // N.B.: Unnecessary; it's here to show the parallelism in the tests
         }
-      }.andThen { case _ ⇒ println(s"Finished producing messages") }
+      }.andThen { case _ ⇒
+        println(s"Finished producing messages")
+      }
 
-      var consumedMessages = 0
 
+      val consumer = KafkaConsumerUtils.create(consumerTimeoutMs = 5000, autoOffsetReset = "smallest")
+      val stream = consumer.createMessageStreamsByFilter(new Whitelist(topic), 1, new StringDecoder, new StringDecoder).head
       val consumerFuture = Future {
         stream foreach { item ⇒
-          consumedMessages += 1
           producer.send(new KeyedMessage[Array[Byte], Array[Byte]](consumerTopic, s"Message ${item.message()}".getBytes("UTF-8")))
         }
-      }.andThen { case _ ⇒ println(s"Shutting down Consumer"); consumer.shutdown() }
+      }.andThen { case _ ⇒
+        println(s"Shutting down Consumer")
+        producer.close()
+      }
 
+
+      var loggedMessages = 0
       val logger = KafkaConsumerUtils.create(consumerTimeoutMs = 5000, autoOffsetReset = "smallest")
       val loggerStream = logger.createMessageStreamsByFilter(
         new Whitelist(s"$topic,$consumerTopic"), 1, new StringDecoder, new StringDecoder
@@ -52,17 +59,21 @@ class ProducerConsumerAndLoggerTest extends FunSpec with ShouldMatchers with Awa
             case s if s == consumerTopic =>
               println(s"[LOGGER] Consumer consumed ${item.message()}")
           }
+
+          loggedMessages += 1
         }
-      }.andThen { case _ ⇒ println(s"Shutting down Logger"); consumer.shutdown() }
-
-
-      awaitCondition("Didn't consume 10 messages!", 10.seconds) {
-        consumedMessages shouldBe 10
+      }.andThen { case _ ⇒
+        println(s"Shutting down Logger")
       }
 
-      producer.close()
-      List(producerFuture, consumerFuture, loggerFuture) foreach (Await.ready(_, 10.second))
+
+      awaitCondition(s"Didn't consume $MessageCount messages!", 15.seconds) {
+        loggedMessages shouldBe MessageCount * 2
+      }
+
+      val shutdownFutures = List(consumer, logger) map (c => Future ( c.shutdown() ) )
       KafkaAdminUtils.deleteTopic(topic)
+      (shutdownFutures :+ producerFuture :+ consumerFuture :+ loggerFuture) foreach (Await.ready(_, 10.second))
     }
   }
 }

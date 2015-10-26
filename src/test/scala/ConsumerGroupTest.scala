@@ -15,43 +15,50 @@ class ConsumerGroupTest extends FunSpec with ShouldMatchers with AwaitCondition 
   describe("A consumer group") {
     it("should consume messages in a balanced fashion, using keys") {
 
+      val MessageCount = 25
+
       val topic = s"topic-${UUID.randomUUID()}"
       val consumerGroupId = UUID.randomUUID().toString
-
       KafkaAdminUtils.createTopic(topic, numPartitions = 3)
 
-      val producer = KafkaProducerUtils.create()
 
+      val producer = KafkaProducerUtils.create()
       val producerFuture = Future {
-        (1 to 25) foreach { number ⇒
+        (1 to MessageCount) foreach { number ⇒
           println(s"Producing Message $number")
           producer.send(new KeyedMessage[Array[Byte], Array[Byte]](topic, number.toString.getBytes("UTF-8"), s"Message $number".getBytes("UTF-8")))
+          Thread.sleep(50) // N.B.: Unnecessary; it's here to show the parallelism in the tests
         }
-      }.andThen { case _ ⇒ println(s"Finished producing messages") }
+      }.andThen { case _ ⇒
+        println(s"Finished producing messages")
+        producer.close()
+      }
 
       var consumedMessages = 0
+      val consumers = (1 to 3) map { n ⇒
+        (n, KafkaConsumerUtils.create(consumerTimeoutMs = 5000, autoOffsetReset = "smallest", groupId = consumerGroupId))
+      }
 
-      val consumerFutures = (1 to 3) map { consumerNumber ⇒
-        val consumer = KafkaConsumerUtils.create(consumerTimeoutMs = 5000, autoOffsetReset = "smallest", groupId = consumerGroupId)
+      val consumerFutures = consumers map { case (n, consumer) =>
         Future {
           val stream = consumer.createMessageStreamsByFilter(new Whitelist(topic), 1, new StringDecoder, new StringDecoder).head
 
-          println(s"Consumer Number $consumerNumber begins consuming")
+          println(s"Consumer Number $n begins consuming")
           stream foreach { item ⇒
-            println(s"Consumer Number $consumerNumber consumed ${item.message()}")
+            println(s"Consumer Number $n consumed ${item.message()}")
 
             consumedMessages += 1
           }
-        }.andThen { case _ ⇒ println(s"Shutting down Consumer Number $consumerNumber"); consumer.shutdown() }
+        }.andThen { case _ ⇒ println(s"Shut down Consumer Number $n"); consumer.shutdown() }
       }
 
-      awaitCondition("Didn't consume 25 messages!", 10.seconds) {
-        consumedMessages shouldBe 25
+      awaitCondition(s"Didn't consume $MessageCount messages!", 10.seconds) {
+        consumedMessages shouldBe MessageCount
       }
 
-      producer.close()
-      (consumerFutures :+ producerFuture) foreach (Await.ready(_, 10.second))
+      val shutdownFutures = consumers map (t => Future ( t._2.shutdown() ) )
       KafkaAdminUtils.deleteTopic(topic)
+      (consumerFutures ++ shutdownFutures :+ producerFuture) foreach (Await.ready(_, 10.second))
     }
   }
 }

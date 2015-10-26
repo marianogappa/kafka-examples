@@ -46,8 +46,8 @@ class BasicAsyncWorkflowTest extends FunSpec with ShouldMatchers with AwaitCondi
       }
 
       producer.close()
-      List(producerFuture, consumerFuture) foreach (Await.ready(_, 10.second))
       KafkaAdminUtils.deleteTopic(topic)
+      List(producerFuture, consumerFuture) foreach (Await.ready(_, 10.second))
     }
   }
 }
