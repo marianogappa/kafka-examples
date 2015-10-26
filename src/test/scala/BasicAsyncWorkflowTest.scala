@@ -11,8 +11,15 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
 class BasicAsyncWorkflowTest extends FunSpec with ShouldMatchers with AwaitCondition {
-  describe("Basic Workflow") {
-    it("should produce and consume messages") {
+  describe("Basic Async Workflow") {
+    it("should produce and consume messages without blocking the main thread") {
+
+      /*
+      Same as BasicWorkflowTest, but the Producer and the Consumer now live inside Futures. In this case, the
+      consumer stream will not block execution, so we need to poll-check with `awaitCondition` until all messages
+      are consumed. You may now try reordering the Producer and Consumer code, and it should still work.
+       */
+
       val MessageCount = 10
       val topic = s"topic-${UUID.randomUUID()}"
       KafkaAdminUtils.createTopic(topic)

@@ -13,6 +13,13 @@ import scala.concurrent.duration._
 
 class ConsumerGroupTest extends FunSpec with ShouldMatchers with AwaitCondition {
   describe("A consumer group") {
+
+    /*
+    Almost identical to ConsumerGroupTheGhettoWayTest, but in this case instead of refreshing the topic
+    metadata we actually produce a key using the message number. Use this solution instead of the previous
+    one to jump start a consumer group use case.
+    */
+
     it("should consume messages in a balanced fashion, using keys") {
 
       val MessageCount = 25

@@ -12,6 +12,15 @@ import scala.concurrent.{Await, Future}
 
 class ProducerConsumerAndLoggerTest extends FunSpec with ShouldMatchers with AwaitCondition {
   describe("A consumer group") {
+
+    /*
+    In this case, we have the basic Producer-Consumer pair, but we don't print out anything that goes on
+    with them. Instead, we have a second Consumer we call Logger, that will sniff the other two and print
+    out their actions. Because consumers don't actually produce any events, we manually produce a "Consumed
+    Event" message in a separate topic each time the Consumer reads something. With this pattern, it
+    becomes easy to log an entire application's data flows, as long as they are implemented with Kafka Queues.
+    */
+
     it("should produce and consume messages, and a logger should sniff and print it out") {
 
       val MessageCount = 25

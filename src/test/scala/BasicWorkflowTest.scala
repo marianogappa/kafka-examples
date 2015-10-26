@@ -8,6 +8,14 @@ import kafka.serializer.StringDecoder
 
 class BasicWorkflowTest extends FunSpec with ShouldMatchers with AwaitCondition {
   describe("Basic Workflow") {
+
+    /*
+    A base case: one producer, one consumer, one execution thread. If we don't produce the messages first,
+    the consumer will block our thread until the 5 second timeout kicks in. Note that it's not necessary
+    to create the topic, as the producer will trigger its creation upon sending the first message (although
+    you may see some error logs complaining that the metadata can't be found).
+     */
+
     it("should produce and consume messages synchronously") {
 
       val topic = s"topic-${UUID.randomUUID()}"

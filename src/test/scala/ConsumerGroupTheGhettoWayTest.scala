@@ -12,6 +12,16 @@ import scala.concurrent.{Await, Future}
 
 class ConsumerGroupTheGhettoWayTest extends FunSpec with ShouldMatchers with AwaitCondition {
   describe("A consumer group") {
+
+    /*
+    In this case we have 1 producer and a group of 3 consumers, consuming from a single topic. This is the
+    common "load balancing" scenario. Note that explicit topic creation is necessary in this case, since we
+    need 3 partitions. Also note that we are not using keys when producing messages: Kafka hashes the key
+    to decide which partition to send the message to. We workaround this issue by refreshing the topic
+    metadata 10 times per second; this is a ghetto way of randomising the recipient consumer for our
+    messages. Don't use this solution.
+    */
+
     it("should consume messages in a balanced fashion, using mass metadata refreshes!") {
 
       val MessageCount = 25

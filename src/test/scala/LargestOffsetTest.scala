@@ -14,6 +14,13 @@ class LargestOffsetTest extends FunSpec with ShouldMatchers with AwaitCondition 
   describe("Largest Offset") {
     it("should not consume produced messages before the consumer was created") {
 
+      /*
+      This example illustrates the `autoOffsetReset = 'largest'` property. There is still one Producer and
+      one Consumer (the latter living in a Future so that it doesn't block execution), but in this case we
+      produce an initial batch of messages, then start the Consumer, and finally we produce a second batch
+      of messages. The Consumer should thus only consume the second batch of messages.
+      */
+
       val topic = s"topic-${UUID.randomUUID()}"
       KafkaAdminUtils.createTopic(topic)
 
