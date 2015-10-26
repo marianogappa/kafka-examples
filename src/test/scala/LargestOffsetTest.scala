@@ -11,7 +11,7 @@ import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
 class LargestOffsetTest extends FunSpec with ShouldMatchers with AwaitCondition {
-  describe("Basic Workflow") {
+  describe("Largest Offset") {
     it("should not consume produced messages before the consumer was created") {
 
       val topic = s"topic-${UUID.randomUUID()}"
@@ -21,7 +21,7 @@ class LargestOffsetTest extends FunSpec with ShouldMatchers with AwaitCondition 
       val producer = KafkaProducerUtils.create()
       (1 to 5) foreach { number ⇒
         println(s"Producing Message $number")
-        Thread.sleep(10)
+        Thread.sleep(50) // N.B.: Unnecessary; it's here to show the parallelism in the tests
         producer.send(new KeyedMessage[Array[Byte], Array[Byte]](topic, s"Message $number".getBytes("UTF-8")))
       }
       println(s"Finished first batch of producing messages")
@@ -43,7 +43,7 @@ class LargestOffsetTest extends FunSpec with ShouldMatchers with AwaitCondition 
 
       (6 to 10) foreach { number ⇒
         println(s"Producing Message $number")
-        Thread.sleep(10)
+        Thread.sleep(50) // N.B.: Unnecessary; it's here to show the parallelism in the tests
         producer.send(new KeyedMessage[Array[Byte], Array[Byte]](topic, s"Message $number".getBytes("UTF-8")))
       }
       println(s"Finished second batch of producing messages")

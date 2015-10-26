@@ -21,7 +21,7 @@ class ConsumerGroupTheGhettoWayTest extends FunSpec with ShouldMatchers with Awa
 
       KafkaAdminUtils.createTopic(topic, numPartitions = 3)
 
-      val producer = KafkaProducerUtils.create(topicMetadataRefreshIntervalMs = 1000)
+      val producer = KafkaProducerUtils.create(topicMetadataRefreshIntervalMs = 100)
       val producerFuture = Future {
         (1 to MessageCount) foreach { number ⇒
           println(s"Producing Message $number")
