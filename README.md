@@ -14,6 +14,7 @@ https://docs.docker.com/installation/
 - Docker Compose (to easily start 2 containers with specific configs) 
 https://docs.docker.com/compose/install/
 
+Note: if you don't like Docker, just start a Kafka Cluster however you like. The tests will work as long as they can talk to a broker and to ZooKeeper.
 
 
 ## Setup
